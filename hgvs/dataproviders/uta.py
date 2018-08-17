@@ -149,12 +149,11 @@ class UTABase(Interface):
             """,
         "tx_for_region":
         """
-            select tx_ac,alt_ac,alt_strand,alt_aln_method,min(start_i) as start_i,max(end_i) as end_i
-            from exon_set ES
-            join exon E on ES.exon_set_id=E.exon_set_id 
+            select tx_ac, alt_ac, alt_strand, alt_aln_method,
+                   starts_i[1], ends_i[array_upper(ends_i, 1)]
+            from exon_set_exons_fp_mv
             where alt_ac=? and alt_aln_method=?
-            group by tx_ac,alt_ac,alt_strand,alt_aln_method
-            having min(start_i) < ? and ? <= max(end_i)
+            and ends_i[array_upper(ends_i, 1)]>? and starts_i[1]<?;
             """,
         "tx_identity_info":
         """
