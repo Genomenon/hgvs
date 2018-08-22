@@ -507,6 +507,10 @@ class UTA_postgresql(UTABase):
 
         self._ensure_schema_exists()
 
+        if not self.pooling:
+            with self._get_cursor() as cur:
+                self._set_search_path(cur)
+
         # remap sqlite's ? placeholders to psycopg2's %s
         self._queries = {k: v.replace('?', '%s') for k, v in six.iteritems(self._queries)}
 
@@ -547,7 +551,8 @@ class UTA_postgresql(UTABase):
                 conn.autocommit = True
 
                 cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-                cur.execute("set search_path = {self.url.schema};".format(self=self))
+                if self.pooling:
+                    self._set_search_path(cur)
 
                 yield cur
 
@@ -573,6 +578,8 @@ class UTA_postgresql(UTABase):
             # N.B. Probably never reached
             raise HGVSError("Permanently lost connection to {url} ({n} retries)".format(url=self.url, n=n_retries))
 
+    def _set_search_path(self, cur):
+        cur.execute("set search_path = {self.url.schema};".format(self=self))
 
 class ParseResult(urlparse.ParseResult):
     """Subclass of url.ParseResult that adds database and schema methods,
